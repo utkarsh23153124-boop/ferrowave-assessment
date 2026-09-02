@@ -1,0 +1,47 @@
+# Ferrowave Pulse Engineering Assessment: candidate pack
+
+Start with `CANDIDATE_BRIEF.md`. It explains the three tasks, the rules, and what to
+submit.
+
+```
+CANDIDATE_BRIEF.md      the assessment (also provided as a Word document)
+corpus/                 Task 1: 41 Ferrowave documents plus _manifest.csv
+sandbox/                Task 2: billing sandbox (server.py, fixtures.json, API_REFERENCE.md)
+task3_data/             Task 3: responses_sample.csv
+templates/              DECISIONS.md, ITERATIONS.md, DEPENDENCIES.md, AI_USAGE.md, EVAL_FORMAT.md
+```
+
+Everything here is fictional. Ferrowave Ltd, Ferrowave Pulse, and every person, customer,
+company, price, and policy in this pack were created for this assessment.
+
+Quick checks:
+
+```
+python3 --version                 # 3.9 or newer for the sandbox
+python3 sandbox/server.py         # starts the billing sandbox on http://127.0.0.1:8787
+curl http://127.0.0.1:8787/health
+```
+
+Read `corpus/_manifest.csv` and `sandbox/API_REFERENCE.md` before writing code.
+
+---
+
+## Candidate Solutions (Monorepo)
+
+- **Task 1 (Documentation Answer Engine RAG)**: `task1-rag/`
+- **Task 2 (Billing Agent)**: `task2-agent/`
+- **Task 3 (Weekly Insights Digest CLI)**: `task3-digest/`
+
+### Running Task 3 (Weekly Digest CLI)
+
+```bash
+cd task3-digest
+pip install -r requirements.txt
+python digest.py --input ../task3_data/responses_sample.csv --week 2026-08-17 --out outputs/digest_2026-08-17.md
+```
+
+To run the Task 3 test suite:
+```bash
+cd task3-digest
+python -m pytest
+```

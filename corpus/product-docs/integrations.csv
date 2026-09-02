@@ -1,0 +1,11 @@
+integration,category,minimum_plan,status,notes,docs_updated
+Slack,Messaging,Starter,GA,Send surveys to channels or DMs and receive alerts,2026-01-20
+Zapier,Automation,Growth,GA,Triggers for new response and alert fired; actions to create respondents,2025-11-03
+HubSpot,CRM,Growth,Beta,Sync respondents from HubSpot contacts; write NPS back to contact properties. Beta: no SLA and may change,2026-05-14
+Intercom,Support,Scale,GA,Trigger a survey after a conversation is closed,2025-09-30
+Zendesk,Support,Scale,GA,Trigger a survey after a ticket is solved,2025-09-30
+Salesforce,CRM,Enterprise,GA,Sync accounts and contacts; NPS written to a custom object,2025-06-12
+Segment,Data,Enterprise,GA,Receive identify and track calls; send response events,2025-12-08
+Microsoft Teams,Messaging,Growth,Beta,Send surveys to Teams channels,2026-06-02
+Google Sheets,Data,Starter,GA,Append each response to a sheet,2025-08-19
+Webhooks,Developer,Scale,GA,Generic event delivery; see the Webhooks article,2026-07-22

@@ -1,0 +1,41 @@
+path,title,audience,status,last_updated,supersedes,notes
+pricing/pricing-2026.md,Pricing (current),public,current,2026-03-01,pricing/pricing-2024.md,Effective 1 March 2026
+pricing/pricing-2024.md,Pricing (2024),public,superseded,2024-06-12,,Replaced 1 March 2026; kept for reference
+pricing/plans.json,Plan matrix (machine readable),public,current,2026-03-01,,Feeds the pricing page
+blog/2026-02-pricing-update.md,Pricing update announcement,public,current,2026-02-03,,Grandfathering rules for existing customers
+policies/refund-policy.md,Refund Policy v3,public,current,2026-02-10,,Prevails over help and FAQ content
+policies/sla-v3-approved.md,Service Level Agreement v3,public,current,2025-11-18,,Enterprise only
+policies/sla-v4-DRAFT.md,Service Level Agreement v4 (draft),internal,draft,2026-07-14,,
+policies/data-retention.md,Data retention,public,current,2026-03-22,,
+policies/acceptable-use.md,Acceptable Use Policy,public,current,2026-01-05,,
+policies/privacy-policy.md,Privacy Policy,public,current,2026-02-09,,
+legal/terms-of-service.pdf,Terms of Service,public,current,2026-02-10,,PDF
+legal/dpa.docx,Data Processing Addendum,public,current,2026-02-10,,Word document
+product-docs/getting-started.md,Getting started,public,current,2026-03-04,,
+product-docs/plans-and-features.md,Plans and features,public,current,2026-03-01,,
+product-docs/pulse-alerts.md,Pulse Alerts,public,current,2026-04-15,,
+product-docs/pulse-signals.md,Pulse Signals,public,current,2026-07-20,,
+product-docs/api-reference.md,API reference,public,current,2026-05-12,,
+product-docs/api-rate-limits.html,API rate limits,public,current,2026-05-12,,HTML with table
+product-docs/webhooks.md,Webhooks,public,current,2026-07-22,,
+product-docs/sso-saml-setup.md,SAML SSO setup,public,current,2026-01-08,,
+product-docs/data-export.md,Exporting data,public,current,2026-06-30,,
+product-docs/response-quotas.md,Response quotas and overage,public,current,2026-03-01,,
+product-docs/seats-and-roles.md,Seats and roles,public,current,2026-03-01,,
+product-docs/integrations.csv,Integrations directory,public,current,2026-07-22,,CSV
+release-notes/2026-02-v3.2.md,Release 3.2,public,current,2026-02-11,,
+release-notes/2026-04-v3.3.md,Release 3.3,public,current,2026-04-07,,
+release-notes/2026-05-v3.4.md,Release 3.4,public,current,2026-05-19,,
+release-notes/2026-07-v3.5.md,Release 3.5,public,current,2026-07-14,,
+support/faq.md,FAQ,public,current,2023-11-02,,
+support/help-center-billing.md,Billing help,public,current,2026-03-05,,
+support/help-center-troubleshooting.txt,Troubleshooting notes,public,current,2026-06-18,,Plain text
+trust/security.md,Security overview,public,current,2025-10-01,,Marketing page
+trust/trust-center-faq.html,Trust Center FAQ,public,current,2026-06-30,,HTML
+community/forum-enterprise-trial.md,Forum thread: Enterprise trial,public,current,2026-06-14,,User generated
+community/forum-webhook-signatures.md,Forum thread: webhook signatures,public,current,2026-07-20,,User generated
+internal/rfc-0042-salesforce-v2.md,RFC 0042 Salesforce v2,internal,current,2026-06-03,,
+internal/support-macros.md,Support macros,internal,current,2026-03-10,,
+blog/nps-best-practices.md,Blog: NPS best practices,public,current,2026-05-21,,
+blog/customer-story-larkspur.md,Blog: Larkspur customer story,public,current,2026-04-09,,
+marketing/careers.md,Careers,public,current,2026-08-01,,

@@ -1,0 +1,34 @@
+# Environment variables and secrets
+.env
+*.env
+*.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Test / Coverage
+.pytest_cache/
+.coverage
+
+# Task outputs (keep templates or dir structure)
+task3-digest/outputs/*.md
+!task3-digest/outputs/.gitkeep

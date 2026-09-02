@@ -1,0 +1,55 @@
+FERROWAVE PULSE TROUBLESHOOTING NOTES
+Last updated 18 June 2026
+
+------------------------------------------------------------
+ALERT DID NOT FIRE
+------------------------------------------------------------
+Symptom: NPS clearly dropped but no alert email arrived.
+Checks:
+ 1. Plan. Pulse Alerts are on Growth and above. Starter workspaces do not have alerts.
+ 2. Sample size. A drop alert compares two 7-day windows. Each window needs at least 30
+    responses. Low-volume workspaces frequently miss this.
+ 3. Magnitude. The drop must be more than 5 points. A drop from 42 to 38 does not fire.
+ 4. Cooldown. A rule that fired in the last 24 hours will not fire again unless the score
+    falls a further 5 points.
+ 5. Scope. Check the rule is scoped to the survey or segment you are looking at.
+ 6. Spam folder. Alert emails come from alerts@ferrowave.example.
+
+------------------------------------------------------------
+EMAIL SURVEYS LANDING IN SPAM
+------------------------------------------------------------
+Verify your sending domain (SPF and DKIM) in Settings, Email. Avoid sending more than
+5,000 emails in the first hour from a newly verified domain.
+
+------------------------------------------------------------
+WEB EMBED NOT SHOWING
+------------------------------------------------------------
+The snippet must be loaded after the DOM is ready. Content Security Policy must allow
+scripts from cdn.ferrowave.example. The survey will not show to a respondent who has
+already answered it in the last 90 days (configurable).
+
+------------------------------------------------------------
+API RETURNS 403 plan_restriction
+------------------------------------------------------------
+The workspace is on Starter, or the endpoint requires a higher plan (for example,
+webhooks endpoints on Growth). Upgrade the workspace.
+
+------------------------------------------------------------
+API RETURNS 429
+------------------------------------------------------------
+You have exceeded your per-minute or per-day limit. Read the Retry-After header and back
+off. Remember that limits are per workspace, so multiple keys share one allowance.
+
+------------------------------------------------------------
+WEBHOOK SIGNATURE VERIFICATION FAILS
+------------------------------------------------------------
+If you compute the signature over a parsed and re-serialised body, it will not match.
+Use the raw request body bytes. For version 2, include the timestamp: sign
+"<timestamp>.<raw body>". Check your clock; requests older than 5 minutes are rejected
+by well-behaved verifiers.
+
+------------------------------------------------------------
+EXPORT IS MISSING RECENT RESPONSES
+------------------------------------------------------------
+Exports use UTC. A response submitted at 23:30 local time may be dated the next day in
+UTC.
