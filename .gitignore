@@ -29,6 +29,4 @@ Thumbs.db
 .pytest_cache/
 .coverage
 
-# Task outputs (keep templates or dir structure)
-task3-digest/outputs/*.md
-!task3-digest/outputs/.gitkeep
+# Generated digests in task3-digest/outputs/ are committed on purpose: the brief asks for them.

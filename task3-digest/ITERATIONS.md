@@ -39,6 +39,20 @@ Failures belong here. Include at least one entry describing something that did n
 - **Concluded**: `Post-support CSAT` measures transactional support satisfaction (which skews lower following unresolved issues), whereas relationship NPS measures overall brand advocacy. Mixing them distorts the NPS benchmark.
 - **Next**: Defaulted NPS math to genuine NPS surveys while including all meaningful customer comments (including CSAT) in thematic feedback analysis, adding the `--include-csat` CLI flag for audit flexibility.
 
+### 2026-09-04 Watch-outs were asserting things the data did not say
+
+- **Built or changed**: Reviewed the v1 digest line by line against the rows behind it before sending the tag.
+- **Observed (evidence)**: Three watch-out sentences were hard-coded prose triggered by keyword counts: "with several customers actively evaluating alternatives", "Monday exports missing Sunday data", and "primarily driven by pricing resistance and dashboard latency". None of those clauses was computed; they were written for this file. The keyword lists also double-counted (a comment mentioning both "dashboard" and "price" hit two rules) and disagreed with the theme section's numbers, which come from a different classifier.
+- **Concluded**: A watch-out the reader cannot trace to a number is a liability, and the section would have broken on any other CSV. It also violated the spirit of "arithmetic in code, never by a model" by putting conclusions in string literals.
+- **Next**: Rewrote `watchouts.py` as threshold rules over data already computed: NPS delta, detractor share, per-comment theme labels (now returned by `themes.py`), segment spread of problem themes, worst segment by detractor share, non-English share, and exclusion rate. Last week's comments are labelled too, so "rising theme" is a real week-over-week delta. Added `tests/test_watchouts.py` (6 tests) and `tests/test_cli.py` (end-to-end on the real file, both formats, an empty week, and Monday snapping). 26 tests pass.
+
+### 2026-09-04 Honesty pass on the docs and repo
+
+- **Built or changed**: Spend was listed as "measured" while the committed digest footer showed zero tokens, because no API key was configured on the build machine. Relabelled as estimates with the arithmetic shown. Removed the `.gitignore` rule that hid the Markdown digest, since the brief asks for generated digests in `outputs/`. Root README no longer lists Task 1 and Task 2 folders that do not exist. `--week` on a non-Monday now snaps back with a note instead of silently computing a Wednesday-to-Tuesday window, and an unwritable `--out` path fails with one line instead of a stack trace.
+- **Observed (evidence)**: `python digest.py --week 2026-08-19` previously produced a window of 19 to 25 August with no warning.
+- **Concluded**: Small, but each one is the kind of thing the reviewer said they check.
+- **Next**: Re-pointed the `v1` tag at this commit (the tag had never been pushed).
+
 ## Part B (Task 3 only)
 
 What in v1 made each Part B change easy or hard. Name files and functions. What you

@@ -28,9 +28,11 @@ Read `corpus/_manifest.csv` and `sandbox/API_REFERENCE.md` before writing code.
 
 ## Candidate Solutions (Monorepo)
 
-- **Task 1 (Documentation Answer Engine RAG)**: `task1-rag/`
-- **Task 2 (Billing Agent)**: `task2-agent/`
-- **Task 3 (Weekly Insights Digest CLI)**: `task3-digest/`
+| Task | Folder | Status |
+|---|---|---|
+| Task 1, documentation answer engine (RAG) | `task1-rag/` | not started |
+| Task 2, billing agent | `task2-agent/` | not started |
+| Task 3, weekly insights digest CLI | `task3-digest/` | Part A done, tagged `v1`; Part B pending |
 
 ### Running Task 3 (Weekly Digest CLI)
 
@@ -38,6 +40,11 @@ Read `corpus/_manifest.csv` and `sandbox/API_REFERENCE.md` before writing code.
 cd task3-digest
 pip install -r requirements.txt
 python digest.py --input ../task3_data/responses_sample.csv --week 2026-08-17 --out outputs/digest_2026-08-17.md
+```
+
+Or from the repo root, exactly as written in the brief:
+```bash
+python digest.py digest --input task3_data/responses_sample.csv --week 2026-08-17 --out task3-digest/outputs/digest_2026-08-17.md
 ```
 
 To run the Task 3 test suite:

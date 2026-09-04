@@ -18,6 +18,7 @@ from nps import (
     compute_nps_comparison,
     filter_responses_by_window,
     get_week_bounds,
+    snap_to_monday,
 )
 from themes import extract_themes_llm
 from watchouts import generate_watchouts
@@ -37,6 +38,15 @@ def run_digest(
     if not os.path.exists(input_path):
         print(f"Error: Input file '{input_path}' does not exist.", file=sys.stderr)
         sys.exit(1)
+
+    # The digest covers Monday to Sunday. A non-Monday date is snapped back, not rejected.
+    try:
+        week_start, snapped = snap_to_monday(week_start)
+    except ValueError:
+        print(f"Error: --week must be a date in YYYY-MM-DD form, got '{week_start}'.", file=sys.stderr)
+        sys.exit(1)
+    if snapped:
+        print(f"Note: --week was not a Monday; using week starting {week_start}.", file=sys.stderr)
 
     if verbose:
         print(f"Ingesting raw data from '{input_path}'...")
@@ -67,20 +77,32 @@ def run_digest(
     pw_all_rows = filter_responses_by_window(valid_rows, pw_start, pw_end, only_nps_surveys=False)
 
     meaningful_comments = [r for r in tw_all_rows if r.get("has_meaningful_comment")]
+    prev_meaningful_comments = [r for r in pw_all_rows if r.get("has_meaningful_comment")]
 
     if verbose:
         print(f"Analyzing {len(meaningful_comments)} feedback comments in target week...")
 
-    # Step 4: Extract themes (LLM with deterministic offline fallback)
+    # Step 4: Extract themes (LLM with deterministic offline fallback).
+    # Last week's comments are labelled too, so watch-outs can report real week-over-week
+    # theme movement instead of keyword guesses. This is a second small model call.
     themes, diagnostics = extract_themes_llm(
         meaningful_comments,
         top_n=top_themes_count,
     )
+    _, prev_diagnostics = extract_themes_llm(
+        prev_meaningful_comments,
+        top_n=top_themes_count,
+    )
+    diagnostics = {
+        **diagnostics,
+        "tokens_in": diagnostics.get("tokens_in", 0) + prev_diagnostics.get("tokens_in", 0),
+        "tokens_out": diagnostics.get("tokens_out", 0) + prev_diagnostics.get("tokens_out", 0),
+        "estimated_cost_usd": round(
+            diagnostics.get("estimated_cost_usd", 0.0) + prev_diagnostics.get("estimated_cost_usd", 0.0), 6
+        ),
+    }
 
-    # Step 5: Generate rule-based watch-out signals
-    watchouts = generate_watchouts(tw_all_rows, pw_all_rows, nps_comp)
-
-    # Step 6: Assemble data quality audit
+    # Step 5: Assemble data quality audit (needed by the watch-outs too)
     reasons_counter: Dict[str, int] = {}
     for r in excluded_rows:
         reason_label = r["reason"].split(" (")[0]
@@ -95,6 +117,18 @@ def run_digest(
         "exclusion_reasons": reasons_counter,
     }
 
+    # Step 6: Watch-outs, every one derived from numbers computed above
+    watchouts = generate_watchouts(
+        tw_all_rows,
+        pw_all_rows,
+        nps_comp,
+        this_week_comments=meaningful_comments,
+        this_week_labels=diagnostics.get("labels", []),
+        prev_week_labels=prev_diagnostics.get("labels", []),
+        theme_titles=diagnostics.get("theme_titles"),
+        data_quality=dq_audit,
+    )
+
     # Step 7: Render and save digest
     render_data: Dict[str, Any] = {
         "input_file": os.path.basename(input_path),
@@ -108,12 +142,15 @@ def run_digest(
 
     rendered_output = render_digest(render_data, fmt=output_format)
 
-    # Ensure parent output directory exists
+    # Ensure parent output directory exists; fail with a message, not a stack trace
     out_file = Path(out_path)
-    out_file.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(out_file, "w", encoding="utf-8") as f:
-        f.write(rendered_output)
+    try:
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_file, "w", encoding="utf-8") as f:
+            f.write(rendered_output)
+    except OSError as exc:
+        print(f"Error: cannot write digest to '{out_file}': {exc.strerror or exc}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"Weekly digest successfully written to: {out_file.resolve()}")
     if verbose:

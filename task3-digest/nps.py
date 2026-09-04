@@ -9,6 +9,19 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 
+def snap_to_monday(week_start_str: str) -> Tuple[str, bool]:
+    """
+    Returns (monday_iso, was_snapped). The digest covers Monday to Sunday, so any
+    other weekday is moved back to the Monday of the same week rather than crashing.
+    Raises ValueError for a date that does not parse at all.
+    """
+    parsed = datetime.strptime(week_start_str.strip(), "%Y-%m-%d")
+    offset = parsed.weekday()  # Monday == 0
+    if offset == 0:
+        return parsed.strftime("%Y-%m-%d"), False
+    return (parsed - timedelta(days=offset)).strftime("%Y-%m-%d"), True
+
+
 def get_week_bounds(week_start_str: str) -> Tuple[datetime, datetime, datetime, datetime]:
     """
     Given a week starting date string 'YYYY-MM-DD' (assumed Monday),

@@ -5,7 +5,18 @@ Outputs clean, professional Markdown (default) and responsive HTML.
 
 from __future__ import annotations
 
+import html as _html
 from typing import Any, Dict, List
+
+
+def md_inline_to_html(text: str) -> str:
+    """Escapes HTML and converts **bold** spans, which watch-outs use, to <strong>."""
+    escaped = _html.escape(text, quote=False)
+    # Split on the bold marker; odd-indexed pieces sit between a pair of markers.
+    parts = escaped.split("**")
+    if len(parts) % 2 == 0:  # unbalanced markers, leave the text alone
+        return escaped
+    return "".join(f"<strong>{part}</strong>" if i % 2 else part for i, part in enumerate(parts))
 
 
 def format_nps_val(val: Any) -> str:
@@ -165,11 +176,11 @@ def render_html(data: Dict[str, Any]) -> str:
     </table>
 
     <h2>2. Top 5 Themes</h2>
-    {''.join(f"<h3>{i}. {t['title']} ({t['count']} mentions)</h3>" + ''.join(f"<blockquote>\"{q}\"</blockquote>" for q in t.get('quotes', [])) for i, t in enumerate(themes, 1))}
+    {''.join(f"<h3>{i}. {_html.escape(t['title'])} ({t['count']} mentions)</h3>" + ''.join(f"<blockquote>\"{_html.escape(q)}\"</blockquote>" for q in t.get('quotes', [])) for i, t in enumerate(themes, 1))}
 
     <h2>3. Watch-Outs</h2>
     <ul>
-      {''.join(f"<li>{w}</li>" for w in watchouts)}
+      {''.join(f"<li>{md_inline_to_html(w)}</li>" for w in watchouts)}
     </ul>
 
     <h2>4. Data Quality & Audit</h2>

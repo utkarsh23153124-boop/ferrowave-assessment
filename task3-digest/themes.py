@@ -29,6 +29,9 @@ STANDARD_THEMES = {
     "other": "Miscellaneous Feedback",
 }
 
+# Themes that describe a problem rather than praise; used by watch-out rules
+PROBLEM_THEMES = {"dashboard_performance", "pricing_concerns", "support_speed", "export_issues"}
+
 # Offline keyword matching patterns for deterministic fallback
 KEYWORD_RULES = [
     ("dashboard_performance", [
@@ -77,7 +80,7 @@ def extract_themes_offline(
     """
     classifications = []
     for c in comments:
-        theme_id = classify_offline(c["comment"])
+        theme_id = classify_offline(c.get("comment") or "")
         classifications.append(theme_id)
 
     counts = Counter(tid for tid in classifications if tid != "other")
@@ -111,6 +114,8 @@ def extract_themes_offline(
         "tokens_in": 0,
         "tokens_out": 0,
         "estimated_cost_usd": 0.0,
+        "labels": classifications,
+        "theme_titles": dict(STANDARD_THEMES),
     }
     return result_themes, diagnostics
 
@@ -126,7 +131,7 @@ def extract_themes_llm(
     The LLM assigns a theme_id to each comment, and Python counts occurrences.
     """
     key = api_key or os.environ.get("OPENAI_API_KEY")
-    if not key or key.strip() == "" or key.startswith("your-openai"):
+    if not comments or not key or key.strip() == "" or key.startswith("your-openai"):
         return extract_themes_offline(comments, top_n=top_n)
 
     try:
@@ -228,16 +233,13 @@ def extract_themes_llm(
             "tokens_in": tokens_in,
             "tokens_out": tokens_out,
             "estimated_cost_usd": round(cost_usd, 6),
+            "labels": [idx_to_theme.get(i, "other") for i in range(len(comments))],
+            "theme_titles": {**STANDARD_THEMES, **{k: v for k, v in theme_titles.items() if isinstance(v, str)}},
         }
         return result_themes, diagnostics
 
     except Exception as e:
         # Graceful fallback to offline extraction on any API or network issue
-        fallback_themes, _ = extract_themes_offline(comments, top_n=top_n)
-        diagnostics = {
-            "model": f"offline_fallback (error: {type(e).__name__})",
-            "tokens_in": 0,
-            "tokens_out": 0,
-            "estimated_cost_usd": 0.0,
-        }
-        return fallback_themes, diagnostics
+        fallback_themes, fallback_diag = extract_themes_offline(comments, top_n=top_n)
+        fallback_diag["model"] = f"offline_fallback (error: {type(e).__name__})"
+        return fallback_themes, fallback_diag
