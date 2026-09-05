@@ -30,3 +30,6 @@ Thumbs.db
 .coverage
 
 # Generated digests in task3-digest/outputs/ are committed on purpose: the brief asks for them.
+
+# Task 1 derived index (rebuild with: cd task1-rag && python ingest.py --corpus ../corpus)
+task1-rag/index/

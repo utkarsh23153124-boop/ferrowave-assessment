@@ -30,9 +30,21 @@ Read `corpus/_manifest.csv` and `sandbox/API_REFERENCE.md` before writing code.
 
 | Task | Folder | Status |
 |---|---|---|
-| Task 1, documentation answer engine (RAG) | `task1-rag/` | not started |
+| Task 1, documentation answer engine (RAG) | `task1-rag/` | built: service, eval (40 questions), tests, four logs; see `task1-rag/README.md` |
 | Task 2, billing agent | `task2-agent/` | not started |
 | Task 3, weekly insights digest CLI | `task3-digest/` | Part A done, tagged `v1`; Part B pending |
+
+### Running Task 1 (answer engine)
+
+```bash
+cd task1-rag
+pip install -r requirements.txt
+cp .env.example .env                      # add OPENAI_API_KEY
+python ingest.py --corpus ../corpus       # build the index
+python app.py                             # http://127.0.0.1:8000  (POST /ask, GET /health)
+python eval/run.py --direct               # 40-question eval -> eval/results.md
+python -m pytest                          # offline tests
+```
 
 ### Running Task 3 (Weekly Digest CLI)
 
