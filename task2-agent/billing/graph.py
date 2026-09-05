@@ -501,11 +501,23 @@ class BillingAgent:
         history = list(self.state.get("history") or [])
         history.extend([("customer", user_message), ("agent", reply)])
 
+        subscription = out.get("subscription") or self.state.get("subscription")
+        invoices = out.get("invoices") or self.state.get("invoices")
+
+        # A write invalidates the cached account. Without this, a customer who asks twice
+        # in one conversation is judged on the state from before the first refund: policy
+        # sees refunded_minor=0, rules the refund allowed a second time, and puts a
+        # duplicate request in front of the approver. The sandbox rejects the write with
+        # invalid_state, so no money moves, but relying on that is relying on the other
+        # side's guard. Re-read instead.
+        if (out.get("execution") or {}).get("ok"):
+            subscription, invoices = None, []
+
         self.state.update({
             "history": history,
             "customer": out.get("customer") or self.state.get("customer"),
-            "subscription": out.get("subscription") or self.state.get("subscription"),
-            "invoices": out.get("invoices") or self.state.get("invoices"),
+            "subscription": subscription,
+            "invoices": invoices,
             "candidates": out.get("candidates") or self.state.get("candidates"),
             "awaiting": out.get("awaiting"),
         })

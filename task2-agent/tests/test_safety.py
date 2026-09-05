@@ -98,16 +98,39 @@ def test_a_503_during_an_approved_refund_yields_exactly_one_refund(make_agent, a
     assert agent.last_turn["execution"]["ok"] is True
 
 
-def test_asking_twice_does_not_refund_twice(make_agent, admin):
-    """The second request finds the invoice already refunded and policy refuses it."""
+def test_asking_twice_in_one_conversation_does_not_refund_twice(make_agent, admin):
+    """My own layer must refuse the second request, not lean on the sandbox's guard.
+
+    The first version of this test cleared the cached invoices by hand before the second
+    turn, which hid a bug: `send` kept the account state from before the refund, so policy
+    saw refunded_minor=0, ruled a second refund allowed, and put a duplicate in front of
+    the approver. Only the sandbox's invalid_state check stopped the payout. A write now
+    invalidates the cache. See ITERATIONS.md.
+    """
+    approvals = []
     agent = make_agent(MAYA, [plan(reply="ok", kind="refund", invoice_id="inv_1001"),
-                              plan(reply="ok", kind="refund", invoice_id="inv_1001")])
+                              plan(reply="ok", kind="refund", invoice_id="inv_1001")],
+                       approver=lambda r: approvals.append(r) or True)
     agent.send("refund my first month")
-    agent.state["invoices"] = []          # force a fresh read, as a new turn would
-    agent.state["subscription"] = None
     agent.send("actually, refund it again")
+
     assert len(admin.ledger()["refunds"]) == 1
     assert agent.last_turn["policy_result"]["allowed"] is False
+    # A fully refunded invoice trips the status check before the amount check; a
+    # partially refunded one would report already_fully_refunded. Either is a refusal.
+    assert agent.last_turn["policy_result"]["code"] in (
+        "invoice_not_refundable", "already_fully_refunded")
+    assert len(approvals) == 1, "no human may be asked to approve an already-paid refund"
+
+
+def test_account_state_is_refreshed_after_a_write(make_agent, admin):
+    """The turn after a refund must be judged on post-refund data."""
+    agent = make_agent(MAYA, [plan(reply="ok", kind="refund", invoice_id="inv_1001"),
+                              plan(reply="ok")])
+    agent.send("refund my first month")
+    agent.send("what does my account look like now")
+    context = agent.llm.seen_context[-1]
+    assert "refunded" in context, "the invoice must now show as refunded in the context"
 
 
 # --- rule 3: never claim something that did not happen ----------------------
