@@ -34,6 +34,34 @@ Read `corpus/_manifest.csv` and `sandbox/API_REFERENCE.md` before writing code.
 | Task 2, billing agent | `task2-agent/` | built: LangGraph CLI chat, 77 tests, state diagram, 7 transcripts, cost report, four logs; see `task2-agent/README.md` |
 | Task 3, weekly insights digest CLI | `task3-digest/` | Part A done, tagged `v1`; Part B pending (sent only after they receive the `v1` tag) |
 
+### What is not finished, and what I would do next
+
+- **Task 3 Part B (`v2`)** is not started. Part B is only sent after the `v1` tag is
+  received, and `task3-digest/` has been untouched since the tag (`git diff v1..HEAD --
+  task3-digest/` is empty) so that Part B starts from exactly what was submitted.
+- **Task 1, Q34 "do you offer a free trial"** answers from a stale-but-current 2023 FAQ
+  because no newer document covers trials. Fixing it properly needs a rule like "a claim
+  appearing only in a stale document is insufficient evidence", which would also suppress
+  correct facts that happen to live only in old pages. Reasoned about in `task1-rag/EVAL.md`.
+- **Task 2, Refund Policy 4.2** requires the requester to be a workspace Owner or Billing
+  Admin. The sandbox customer record has no role field, so this cannot be enforced. Next
+  step is to add the check the moment a role exists; I would not ship self-serve refunds
+  without it.
+- **Task 2, no fixture customer can complete a downgrade** (every workspace exceeds every
+  lower plan's seat allowance), so the next-cycle path is proven by unit test rather than
+  an end-to-end run.
+- **Task 2, PM spec point 6 (3-second replies) is not met and cannot be** against the
+  sandbox's own latency. Argued in `task2-agent/DECISIONS.md`, Spec issues 6.
+- **Model non-determinism.** Task 1 expects one or two of 40 eval questions to move between
+  runs; guardrails are designed to make the moves safe rather than to prevent them.
+
+### Test suites
+
+```
+task1-rag    29 passed      task2-agent  78 passed (no API key needed)
+task3-digest 26 passed
+```
+
 ### Running Task 1 (answer engine)
 
 ```bash
