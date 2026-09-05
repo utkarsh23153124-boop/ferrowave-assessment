@@ -51,7 +51,15 @@ Task: Task 1 (answer engine)
    - What I did instead: null price now renders as "custom, quoted by sales". Pinned by a
      loader test.
 
-5. **`sed` on Windows inserted a literal newline into a test file.** Not an AI mistake as
+5. **The AI-drafted guardrails could remove correct answers.** A code review run over the
+   finished service (itself AI-assisted, findings reproduced by me against the corpus)
+   showed the fallback citation could attach the stale FAQ's "30-day money-back" sentence
+   to an answer that said the opposite, the repair pass could swap a correct answer for a
+   refusal, and the rebuild deleted the working index before the network call that could
+   fail. Each is in ITERATIONS 2026-09-05 with the fix and a test. The lesson I took: a
+   guard written to catch the model's mistakes needs the same scrutiny as the model.
+
+6. **`sed` on Windows inserted a literal newline into a test file.** Not an AI mistake as
    such, but the assistant's shell edit broke the suite; fixed with an editor tool. Noted
    because "the tests were green" would have been false for ten minutes.
 

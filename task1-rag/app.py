@@ -13,8 +13,8 @@ from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from fastapi import FastAPI, HTTPException  # noqa: E402
-from fastapi.responses import HTMLResponse  # noqa: E402
+from fastapi import FastAPI, Header, HTTPException  # noqa: E402
+from fastapi.responses import FileResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from rag.answer import Answerer  # noqa: E402
@@ -37,9 +37,25 @@ async def lifespan(_app: FastAPI):
         print("No index found; building it from", DEFAULT_CORPUS, file=sys.stderr)
         from rag.ingest import main as ingest_main
 
-        ingest_main(["--corpus", str(DEFAULT_CORPUS)])
+        # ingest decides on its own whether a key is available and degrades to BM25 if not
+        if ingest_main(["--corpus", str(DEFAULT_CORPUS)]) != 0:
+            raise RuntimeError(f"could not build an index from {DEFAULT_CORPUS}")
     _load()
     yield
+
+
+def _allowed_corpus(raw: Optional[str]) -> Path:
+    """Reindex only from directories inside the repository, so an unauthenticated client
+    cannot point the service at arbitrary files on the host."""
+    from rag.config import REPO_ROOT
+
+    corpus = Path(raw).expanduser() if raw else DEFAULT_CORPUS
+    corpus = (REPO_ROOT / corpus).resolve() if not corpus.is_absolute() else corpus.resolve()
+    if REPO_ROOT.resolve() not in corpus.parents and corpus != REPO_ROOT.resolve():
+        raise HTTPException(status_code=403, detail="corpus must be a directory inside the repository")
+    if not (corpus / "_manifest.csv").exists():
+        raise HTTPException(status_code=400, detail=f"no _manifest.csv in {corpus}")
+    return corpus
 
 
 app = FastAPI(title="Ferrowave Pulse answer engine", lifespan=lifespan)
@@ -57,10 +73,10 @@ class ReindexRequest(BaseModel):
 STATIC = Path(__file__).resolve().parent / "static" / "index.html"
 
 
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/", include_in_schema=False)
 def home():
     """Minimal browser UI for asking questions."""
-    return STATIC.read_text(encoding="utf-8")
+    return FileResponse(STATIC, media_type="text/html")
 
 
 @app.get("/health")
@@ -89,17 +105,24 @@ def ask(req: AskRequest):
 
 
 @app.post("/reindex")
-def reindex(req: ReindexRequest):
-    """Rebuild the index from a corpus path and reload it without restarting."""
+def reindex(req: ReindexRequest, x_admin_token: Optional[str] = Header(default=None)):
+    """Rebuild the index from a corpus path inside the repo and reload it without restarting.
+    If RAG_ADMIN_TOKEN is set in the environment, the X-Admin-Token header must match it."""
     from rag.ingest import main as ingest_main
 
-    corpus = req.corpus or str(DEFAULT_CORPUS)
-    args = ["--corpus", corpus]
+    expected = os.getenv("RAG_ADMIN_TOKEN")
+    if expected and x_admin_token != expected:
+        raise HTTPException(status_code=401, detail="missing or wrong X-Admin-Token")
+    corpus = _allowed_corpus(req.corpus)
+    args = ["--corpus", str(corpus)]
     if not req.embed:
         args.append("--no-embed")
-    rc = ingest_main(args)
+    try:
+        rc = ingest_main(args)
+    except Exception as exc:  # the old index is untouched: ingest builds into a temp dir
+        raise HTTPException(status_code=502, detail=f"ingest failed, previous index kept: {type(exc).__name__}: {exc}") from exc
     if rc != 0:
-        raise HTTPException(status_code=400, detail=f"ingest failed for corpus {corpus}")
+        raise HTTPException(status_code=400, detail=f"ingest refused corpus {corpus} (see server log); previous index kept")
     _load()
     return health()
 

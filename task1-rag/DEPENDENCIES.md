@@ -23,7 +23,7 @@ pinned or installed on the build machine.
 | `uvicorn` | 0.30.6 | ASGI server for FastAPI. | Any ASGI server; or `wsgiref` with a WSGI framework. | BSD. |
 | `pydantic` | 2.9.2 | Request schemas and the structured-output `Draft` schema the model must fill. | Dataclasses plus manual validation; the structured output contract would need a hand-written JSON schema. | MIT. Already required by FastAPI and LangChain. |
 | `httpx` | 0.27.2 | HTTP client in `eval/run.py` to post to the running service. | `urllib.request`. | BSD. Already a transitive dependency of `openai`. |
-| `pytest` | 9.1.1 | Test runner for the 17 offline tests. | `unittest`. | MIT. Dev only. |
+| `pytest` | 9.1.1 | Test runner for the 29 offline tests. | `unittest`. | MIT. Dev only. |
 
 ## Framework accounting
 

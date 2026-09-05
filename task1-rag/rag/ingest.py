@@ -1,35 +1,40 @@
 """Build the index from a corpus directory.
 
-    python ingest.py --corpus ../corpus            # full build (needs OPENAI_API_KEY)
+    python ingest.py --corpus ../corpus            # full build (embeds if OPENAI_API_KEY is set)
     python ingest.py --corpus ../corpus --no-embed  # BM25-only index, no network
 
 The manifest is the ingestion allowlist: a file that is not in _manifest.csv is not
 indexed. Every chunk carries the manifest row (audience, status, dates, notes) plus the
 authority tier and visibility decision from policy.py, so retrieval can filter and rank
 without re-reading the manifest.
+
+The index is built into a temporary directory and swapped into place only when complete,
+so a failed build (no key, network error) never destroys the working index.
 """
 from __future__ import annotations
 
 import argparse
 import csv
 import json
+import os
 import shutil
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from langchain_core.documents import Document
 
 from .config import DEFAULT_CORPUS, EMBED_MODEL, INDEX_DIR, MANIFEST_NAME, load_env
 from .loaders import extracted_text, load_file
-from .policy import customer_visible, folder_of, tier_for
+from .policy import customer_visible, folder_of, is_stale, tier_for
 
 CHUNKS_FILE = "chunks.jsonl"
 META_FILE = "meta.json"
 EXTRACTED_DIR = "extracted"
 FAISS_DIR = "faiss"
+_INDEX_MARKERS = {CHUNKS_FILE, META_FILE, EXTRACTED_DIR, FAISS_DIR}
 
 
 def read_manifest(corpus: Path) -> List[Dict[str, str]]:
@@ -41,6 +46,11 @@ def read_manifest(corpus: Path) -> List[Dict[str, str]]:
     for r in rows:
         for k, v in list(r.items()):
             r[k] = (v or "").strip()
+    # Reverse the `supersedes` column: a document named as superseded by another row is
+    # hidden even if its own status column was not updated.
+    superseded_by = {r["supersedes"]: r["path"] for r in rows if r.get("supersedes")}
+    for r in rows:
+        r["_superseded_by"] = superseded_by.get(r["path"], "")
     return rows
 
 
@@ -50,7 +60,7 @@ def header_for(doc: Document) -> str:
     return f"{m.get('title', '')} > {m.get('section', '')}\n{doc.page_content}"
 
 
-def build_documents(corpus: Path) -> tuple[List[Document], Dict[str, str], List[Dict]]:
+def build_documents(corpus: Path) -> Tuple[List[Document], Dict[str, str], List[Dict]]:
     docs: List[Document] = []
     extracted: Dict[str, str] = {}
     report: List[Dict] = []
@@ -69,6 +79,7 @@ def build_documents(corpus: Path) -> tuple[List[Document], Dict[str, str], List[
             continue
         visible, why = customer_visible(row)
         tier = tier_for(row)
+        stale = is_stale(row.get("last_updated", ""))
         for i, (section, text, extra) in enumerate(pieces):
             meta = {
                 "path": rel,
@@ -77,9 +88,11 @@ def build_documents(corpus: Path) -> tuple[List[Document], Dict[str, str], List[
                 "status": row.get("status", ""),
                 "last_updated": row.get("last_updated", ""),
                 "supersedes": row.get("supersedes", ""),
+                "superseded_by": row.get("_superseded_by", ""),
                 "notes": row.get("notes", ""),
                 "folder": folder_of(rel),
                 "tier": tier,
+                "stale": stale,
                 "customer_visible": visible,
                 "visibility_reason": why,
                 "section": section,
@@ -92,19 +105,44 @@ def build_documents(corpus: Path) -> tuple[List[Document], Dict[str, str], List[
     return docs, extracted, report
 
 
+def _looks_like_index(path: Path) -> bool:
+    """Refuse to delete a directory that is not one of ours (guards --index ../corpus)."""
+    if not path.exists():
+        return True
+    names = {p.name for p in path.iterdir()}
+    return not names or bool(names & _INDEX_MARKERS)
+
+
 def write_index(docs: List[Document], extracted: Dict[str, str], report: List[Dict],
                 corpus: Path, index_dir: Path, embed: bool) -> Dict:
-    if index_dir.exists():
-        shutil.rmtree(index_dir)
-    index_dir.mkdir(parents=True)
-    with (index_dir / CHUNKS_FILE).open("w", encoding="utf-8") as fh:
+    index_dir = Path(index_dir)
+    if not _looks_like_index(index_dir):
+        raise RuntimeError(f"refusing to overwrite {index_dir}: it does not look like an index directory")
+    tmp = index_dir.with_name(index_dir.name + ".tmp")
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    tmp.mkdir(parents=True)
+    try:
+        meta = _write_into(docs, extracted, report, corpus, tmp, embed)
+        if index_dir.exists():
+            shutil.rmtree(index_dir)
+        os.replace(tmp, index_dir)
+    except Exception:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
+    return meta
+
+
+def _write_into(docs: List[Document], extracted: Dict[str, str], report: List[Dict],
+                corpus: Path, out: Path, embed: bool) -> Dict:
+    with (out / CHUNKS_FILE).open("w", encoding="utf-8") as fh:
         for d in docs:
             fh.write(json.dumps({"text": d.page_content, "metadata": d.metadata}, ensure_ascii=False) + "\n")
-    ext_dir = index_dir / EXTRACTED_DIR
+    ext_dir = out / EXTRACTED_DIR
     for rel, text in extracted.items():
-        out = ext_dir / (rel + ".txt")
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(text, encoding="utf-8")
+        target = ext_dir / (rel + ".txt")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
 
     embed_tokens = 0
     embed_seconds = 0.0
@@ -112,19 +150,21 @@ def write_index(docs: List[Document], extracted: Dict[str, str], report: List[Di
         from langchain_community.vectorstores import FAISS
         from langchain_openai import OpenAIEmbeddings
 
-        load_env()
         embeddings = OpenAIEmbeddings(model=EMBED_MODEL)
-        texts = [header_for(d) for d in docs]
+        # Only customer-visible chunks are embedded: hidden ones can never be returned, so
+        # embedding them costs money and candidate slots for nothing.
+        emb_docs = [d for d in docs if d.metadata["customer_visible"]]
+        texts = [header_for(d) for d in emb_docs]
         t0 = time.perf_counter()
         vectors = embeddings.embed_documents(texts)
         embed_seconds = time.perf_counter() - t0
         embed_tokens = sum(len(t) // 4 for t in texts)  # estimate; the embeddings API does not return usage here
         store = FAISS.from_embeddings(
-            text_embeddings=list(zip([d.page_content for d in docs], vectors)),
+            text_embeddings=list(zip([d.page_content for d in emb_docs], vectors)),
             embedding=embeddings,
-            metadatas=[d.metadata for d in docs],
+            metadatas=[d.metadata for d in emb_docs],
         )
-        store.save_local(str(index_dir / FAISS_DIR))
+        store.save_local(str(out / FAISS_DIR))
 
     visible_paths = {d.metadata["path"] for d in docs if d.metadata["customer_visible"]}
     all_paths = {d.metadata["path"] for d in docs}
@@ -141,8 +181,19 @@ def write_index(docs: List[Document], extracted: Dict[str, str], report: List[Di
         "embed_seconds": round(embed_seconds, 2),
         "files": report,
     }
-    (index_dir / META_FILE).write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    (out / META_FILE).write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return meta
+
+
+def decide_embed(no_embed_flag: bool) -> bool:
+    """Embed only when asked to and a key is available; say so when degrading."""
+    if no_embed_flag:
+        return False
+    load_env()
+    if not os.getenv("OPENAI_API_KEY"):
+        print("WARN OPENAI_API_KEY not set; building a BM25-only index (no embeddings)", file=sys.stderr)
+        return False
+    return True
 
 
 def main(argv: List[str] | None = None) -> int:
@@ -156,7 +207,10 @@ def main(argv: List[str] | None = None) -> int:
     if not docs:
         print("No documents loaded; nothing written.", file=sys.stderr)
         return 1
-    meta = write_index(docs, extracted, report, corpus, Path(args.index), embed=not args.no_embed)
+    if not any(d.metadata["customer_visible"] for d in docs):
+        print("No customer-visible documents in this corpus; refusing to build an empty index.", file=sys.stderr)
+        return 1
+    meta = write_index(docs, extracted, report, corpus, Path(args.index), embed=decide_embed(args.no_embed))
     hidden = [r for r in report if r.get("visible") is False]
     errors = [r for r in report if r.get("error")]
     print(f"Indexed {meta['documents']} documents / {meta['chunks']} chunks into {args.index}")
@@ -164,7 +218,7 @@ def main(argv: List[str] | None = None) -> int:
     print(f"  hidden from customers: {', '.join(r['path'] + ' (' + r['why'] + ')' for r in hidden) or 'none'}")
     if errors:
         print(f"  errors: {errors}")
-    print(f"  embeddings: {'yes, ' + str(meta['embed_model']) : <40}" if meta["embedded"] else "  embeddings: skipped (--no-embed)")
+    print(f"  embeddings: {'yes, ' + str(meta['embed_model']) if meta['embedded'] else 'skipped (BM25 only)'}")
     return 0
 
 

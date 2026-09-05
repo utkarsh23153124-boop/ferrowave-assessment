@@ -31,8 +31,14 @@ python ingest.py --corpus /path/to/other/corpus     # then restart app.py
 curl -s -X POST http://127.0.0.1:8000/reindex -H "Content-Type: application/json" -d '{"corpus": "../corpus"}'
 ```
 
-`--no-embed` builds a BM25-only index with no network calls; the service then runs
-keyword retrieval only. Useful when the key is missing or the API is down.
+`--no-embed` builds a BM25-only index with no network calls, and ingest does the same on
+its own when `OPENAI_API_KEY` is not set. Retrieval quality drops in that mode (dense
+retrieval is what surfaces the refund policy for "money-back guarantee"), and answering
+still needs the key. A rebuild happens in a temporary directory and is swapped in only when
+complete, so a failed rebuild never removes the working index.
+
+`POST /reindex` only accepts corpus paths inside the repository. Set `RAG_ADMIN_TOKEN` in
+the environment to also require an `X-Admin-Token` header.
 
 ## Eval and tests
 
@@ -101,6 +107,11 @@ tables and JSON (where "verbatim" means verbatim in what the loader produced).
 **Prompt injection**: `[[...]]` blocks in forum posts are stripped at ingest, forum posts
 are chunked one per post with the author role, and the system prompt treats all chunk
 content as data. The eval set includes an injected question (Q40).
+
+## Windows note
+
+Deep clone paths can hit the 260-character path limit when pip installs lxml. Clone into a
+short path (for example `C:\src\ferrowave`) or enable long paths in Windows.
 
 ## Live session
 

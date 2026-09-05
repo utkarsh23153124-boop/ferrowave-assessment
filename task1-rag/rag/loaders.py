@@ -16,10 +16,10 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 
 from .config import CHUNK_OVERLAP, CHUNK_SIZE
+from .policy import STAFF_AUTHOR_RE
+from .text import INJECTION_BLOCK
 
 Piece = Tuple[str, str, Dict[str, Any]]  # (section, text, extra metadata)
-
-INJECTION_BLOCK = re.compile(r"\[\[.*?\]\]", re.S)
 _splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
 
 
@@ -68,7 +68,7 @@ def _load_forum(raw: str) -> List[Piece]:
         stripped = INJECTION_BLOCK.sub("", body)
         injected = stripped != body
         body = re.sub(r"\n{3,}", "\n\n", stripped).strip()
-        role = "staff" if "ferrowave" in author.lower() else "user"
+        role = "staff" if STAFF_AUTHOR_RE.search(author) else "user"
         text = f"Forum thread: {title}\nPost by {author} ({role}), {posted}:\n{body}"
         pieces.append((f"post by {author} ({posted})", text, {
             "author": author, "author_role": role, "injection_stripped": injected,

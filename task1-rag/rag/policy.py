@@ -25,7 +25,9 @@ TIER_BY_FOLDER: Dict[str, int] = {
 }
 
 # Documents older than this are demoted two tiers even if the manifest says "current".
-# support/faq.md (2023-11-02) is the reason this rule exists.
+# support/faq.md (2023-11-02) is the reason this rule exists. Absolute on purpose: the
+# corpus is a snapshot dated 2026, and a relative rule would demote the approved SLA (2025-11)
+# the moment the newest document moved forward a year.
 STALE_BEFORE = date(2025, 1, 1)
 STALE_PENALTY = 2
 
@@ -35,27 +37,39 @@ TIER_WEIGHT = {1: 1.00, 2: 0.90, 3: 0.75, 4: 0.60, 5: 0.45, 6: 0.40, 7: 0.35, 8:
 
 PLAN_NAMES = ("starter", "growth", "scale", "enterprise")
 
-# Topics whose answer changes by plan. If the question hits one of these and names no plan
+# Forum posts by these authors are treated as staff answers. Anchored so a user handle
+# containing "ferrowave" does not inherit staff trust.
+STAFF_AUTHOR_RE = re.compile(r"^ferrowave (team|staff|support)\b", re.I)
+
+# Topics whose answer is a per-plan table. If the question hits one of these, names no plan
 # and is not asking for a comparison, the service asks which plan the customer is on.
+# Deliberately narrow: "how much notice", "at scale", "tell us" must not fire.
 _PLAN_GATED = [
-    r"\bhow many (seats|users|responses|requests)\b",
+    r"\bhow many (seats|users|members|responses|requests)\b",
     r"\b(seat|seats) (are |is )?included\b",
     r"\bincluded seats?\b",
-    r"\b(price|pricing|cost|costs|how much|per month|per year|monthly|annual(ly)?)\b",
-    r"\bextra seat",
+    r"\b(price|pricing|cost|costs) (of|for|per)\b",
+    r"\bhow much (does|is|do|will|would|are)\b",
+    r"\bper (month|year)\b",
+    r"\bextra seats?\b",
     r"\boverage\b",
     r"\bresponse (limit|quota|allowance)\b",
-    r"\brate limit",
+    r"\b(my|our)\b.{0,30}\brate limits?\b",
+    r"\brate limits? (on|for) my\b",
     r"\brequests per (minute|day)\b",
     r"\b(support )?(response|reply) time\b",
-    r"\bhow (long|many (days|months)).{0,40}\b(keep|retain|retention|stored|kept)\b",
-    r"\bretention\b",
+    r"\bhow long .{0,40}\b(keep|retain)\b.{0,40}\b(responses?|data|surveys?)\b",
+    r"\bretention (window|period|policy)\b|\bdata retention\b",
     r"\bwebhook (log|logs|delivery log)",
-    r"\b(eu|european|us|region|data residency|where is my data)\b",
+    r"\bincluded in my plan\b|\bon my plan\b",
 ]
-_PLAN_GATED.append(r"included in my plan|on my plan")
 _COMPARISON = re.compile(r"\b(which plans?|each plan|all plans|every plan|compare|difference between|what plans?)\b", re.I)
 _PLAN_GATED_RE = [re.compile(p, re.I) for p in _PLAN_GATED]
+# A plan is "named" when written as a proper noun, or a lowercase name next to a plan word.
+# Plain lowercase "scale" / "growth" are ordinary English ("at scale", "growth in NPS").
+_PLAN_PROPER = re.compile(r"\b(Starter|Growth|Scale|Enterprise)\b")
+_PLAN_CONTEXT = re.compile(r"\b(starter|growth|scale|enterprise)\s+(plan|workspace|tier|subscription|customers?)\b"
+                           r"|\bon (the )?(starter|growth|scale|enterprise)\b", re.I)
 
 
 def folder_of(path: str) -> str:
@@ -69,15 +83,21 @@ def parse_date(value: str) -> date | None:
         return None
 
 
+def is_stale(last_updated: str) -> bool:
+    """One definition of stale, used for the tier penalty and the context warning."""
+    updated = parse_date(last_updated or "")
+    return bool(updated and updated < STALE_BEFORE)
+
+
 def tier_for(row: Dict[str, str]) -> int:
     """Authority tier for a manifest row (1 = highest)."""
     tier = TIER_BY_FOLDER.get(folder_of(row["path"]), 4)
-    updated = parse_date(row.get("last_updated", ""))
-    if updated and updated < STALE_BEFORE:
+    if is_stale(row.get("last_updated", "")):
         tier += STALE_PENALTY
-    if "marketing page" in (row.get("notes") or "").lower():
+    notes = (row.get("notes") or "").lower()
+    if "marketing page" in notes:
         tier += 1
-    if "user generated" in (row.get("notes") or "").lower():
+    if "user generated" in notes:
         tier = max(tier, 5)
     return min(tier, 9)
 
@@ -90,12 +110,14 @@ def customer_visible(row: Dict[str, str]) -> Tuple[bool, str]:
         return False, f"audience={audience or 'missing'}"
     if status in {"draft", "superseded", "archived", "deprecated"}:
         return False, f"status={status}"
+    # Another manifest row names this document in its `supersedes` column (set by ingest).
+    if row.get("_superseded_by"):
+        return False, f"superseded_by={row['_superseded_by']}"
     return True, ""
 
 
 def mentions_plan(question: str) -> bool:
-    q = question.lower()
-    return any(re.search(rf"\b{p}\b", q) for p in PLAN_NAMES)
+    return bool(_PLAN_PROPER.search(question) or _PLAN_CONTEXT.search(question))
 
 
 def plan_gate(question: str) -> str:
@@ -108,4 +130,4 @@ def plan_gate(question: str) -> str:
 
 
 def weight_for_tier(tier: int) -> float:
-    return TIER_WEIGHT.get(tier, 0.3)
+    return TIER_WEIGHT[max(1, min(int(tier), 9))]

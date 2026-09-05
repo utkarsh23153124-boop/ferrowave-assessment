@@ -90,6 +90,50 @@ concluded, what I did next.
   ten minutes "tests pass" would have been false.
 - Next: used the editor tool for anything containing a backslash; tests back to 17 passing.
 
+### 2026-09-05 Audit of the finished service
+
+- Built or changed: nothing at first. Cloned the repo fresh into a new virtualenv and ran
+  install, ingest, tests and an eval subset from the README alone; then ran a multi-angle
+  code review over the Task 1 commits and reproduced each finding against the real corpus.
+- Observed (evidence), the ones that mattered:
+  - `write_index` deleted `index/` before calling the embeddings API. With no key (this
+    build machine until yesterday) or a network error, the service could not start again
+    until someone ran ingest by hand. `POST /reindex` had the same failure mode.
+  - The plan gate's `\b(eu|european|us|region ...)\b` pattern matched the pronoun "us":
+    "Which events can webhooks send to us?" was forced into clarification. `cost` and
+    `how much` matched "How much notice do you give". Lowercase "scale" in "at scale" made
+    the gate think a plan was named, disabling it.
+  - The fallback citation picked the best-overlapping sentence from any retrieved chunk.
+    For "Do you offer a 30-day money-back guarantee?" with a correct "No" answer, the best
+    overlap was the stale FAQ's "We offer a 30-day money-back guarantee on all plans": a
+    verbatim, visible citation asserting the opposite of the answer.
+  - The repair call did not include the model's first draft in the transcript, and its
+    acceptance rule compared citation counts only, so a repair that returned
+    `insufficient_evidence` with no citations replaced a correct answer.
+  - The plan gate override was applied even when the model said the corpus had nothing,
+    producing "Which plan are you on? I could not find that in the documentation".
+  - `/reindex` accepted any filesystem path and no authentication.
+  - The forum loader's synthetic header ("Post by X (staff), date:") was written into the
+    extracted text and could therefore pass quote verification although it is not in the
+    document. The manifest's `supersedes` column was carried on every chunk and read nowhere.
+  - Q23's blog quote failed verification because the model closed it with a full stop the
+    source line does not have; the repair did not fix it; the (first version of the)
+    fallback refused tier 4, so a correct answer was downgraded.
+  - A Windows-only one: pip could not install lxml in a clone under a deep path because of
+    the 260-character limit. Not a repo bug, but a reviewer could hit it.
+- Concluded: every one of these is a case where a guardrail meant to add safety could
+  remove a correct answer or add a wrong citation. The guardrails needed guardrails.
+- Next: build into a temp dir and swap atomically, refuse to delete non-index directories,
+  degrade to BM25 without a key instead of failing; rewrite the gate patterns and require a
+  plan to be a proper noun or next to "plan"; restrict the fallback to documents the model
+  cited, tiers 1-4, never stale; keep the first draft unless the repair strictly improves
+  it with the same status; force clarification only over an `answered` draft; restrict
+  `/reindex` to paths inside the repo with an optional token; verify prose formats against
+  the raw file only; honour `supersedes`; forgive trailing punctuation on quotes and return
+  the trimmed form; preload verification text into memory so a concurrent reindex cannot
+  race it. 29 tests pass (10 new). Eval 37/40 before and after, but the new run needs zero
+  repair calls and zero guardrail overrides; the old one needed two repairs.
+
 ### 2026-09-04 Things I tried and dropped
 
 - Letting the model decide on every plan-dependent question with no gate: it answered

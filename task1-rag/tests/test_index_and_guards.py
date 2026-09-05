@@ -28,7 +28,8 @@ def test_hidden_documents_never_retrieved(offline_index):
 def test_policy_outranks_stale_faq(offline_index):
     ranked = [d.metadata["path"] for d, _ in offline_index.retrieve("refund policy money-back guarantee", k=6)]
     assert "policies/refund-policy.md" in ranked
-    assert ranked.index("policies/refund-policy.md") < ranked.index("support/faq.md") if "support/faq.md" in ranked else True
+    assert "support/faq.md" in ranked, "the stale FAQ should be a candidate so the ordering is actually exercised"
+    assert "support/faq.md" not in ranked[: ranked.index("policies/refund-policy.md")]
 
 
 def test_quote_verification(offline_index):
