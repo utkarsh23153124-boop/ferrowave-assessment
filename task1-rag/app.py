@@ -14,6 +14,7 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fastapi import FastAPI, HTTPException  # noqa: E402
+from fastapi.responses import HTMLResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from rag.answer import Answerer  # noqa: E402
@@ -51,6 +52,15 @@ class AskRequest(BaseModel):
 class ReindexRequest(BaseModel):
     corpus: Optional[str] = None
     embed: bool = True
+
+
+STATIC = Path(__file__).resolve().parent / "static" / "index.html"
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def home():
+    """Minimal browser UI for asking questions."""
+    return STATIC.read_text(encoding="utf-8")
 
 
 @app.get("/health")

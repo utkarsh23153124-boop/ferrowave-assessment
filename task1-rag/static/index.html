@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ferrowave Pulse Answer Engine</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --text:#e6e8ee; --muted:#9aa3b2; --accent:#4f8cff; --ok:#3ddc84; --warn:#f5b342; --bad:#ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  form { display:flex; gap:10px; }
+  input { flex:1; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:15px; }
+  button { padding:12px 18px; border-radius:10px; border:0; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .samples { margin:12px 0 24px; display:flex; flex-wrap:wrap; gap:8px; }
+  .samples button { background:var(--card); border:1px solid var(--line); color:var(--muted); font-weight:500; font-size:13px; padding:6px 10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-top:16px; }
+  .q { color:var(--muted); font-size:13px; margin-bottom:8px; }
+  .status { display:inline-block; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; margin-bottom:10px; }
+  .answered { background:rgba(61,220,132,.15); color:var(--ok); }
+  .needs_clarification { background:rgba(245,179,66,.15); color:var(--warn); }
+  .insufficient_evidence { background:rgba(255,107,107,.15); color:var(--bad); }
+  .answer { white-space: pre-wrap; }
+  .cites { margin-top:12px; border-top:1px solid var(--line); padding-top:10px; }
+  .cite { font-size:13px; color:var(--muted); margin:6px 0; }
+  .cite b { color:var(--text); font-weight:600; }
+  .diag { margin-top:10px; font-size:12px; color:var(--muted); }
+  .err { color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ferrowave Pulse answer engine</h1>
+  <div class="sub" id="health">checking service…</div>
+  <form id="f">
+    <input id="q" placeholder="Ask a question about Ferrowave Pulse…" autofocus autocomplete="off">
+    <button id="go" type="submit">Ask</button>
+  </form>
+  <div class="samples" id="samples"></div>
+  <div id="out"></div>
+</div>
+<script>
+const samples = [
+  "How many seats are included on the Scale plan?",
+  "Do you offer a 30-day money-back guarantee?",
+  "Which events can webhooks send?",
+  "How many seats do I get?",
+  "Do you offer discounts for non-profits?",
+  "Is Enterprise free for the first year?",
+];
+const $ = s => document.querySelector(s);
+const sBox = $("#samples");
+samples.forEach(t => { const b = document.createElement("button"); b.type="button"; b.textContent=t; b.onclick=()=>{ $("#q").value=t; ask(t); }; sBox.appendChild(b); });
+
+fetch("/health").then(r=>r.json()).then(h=>{
+  $("#health").textContent = `${h.documents_indexed} customer-visible documents indexed (${h.chunks} chunks) · model ${h.model} · embeddings ${h.embeddings ? "on" : "off"}`;
+}).catch(()=>{ $("#health").textContent = "service not reachable"; });
+
+$("#f").addEventListener("submit", e => { e.preventDefault(); const t=$("#q").value.trim(); if(t) ask(t); });
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+async function ask(question){
+  const go=$("#go"); go.disabled=true; go.textContent="…";
+  const card=document.createElement("div"); card.className="card";
+  card.innerHTML=`<div class="q">${esc(question)}</div><div class="answer">thinking…</div>`;
+  $("#out").prepend(card);
+  try{
+    const r = await fetch("/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.detail || r.statusText);
+    const cites = (d.citations||[]).map(c=>`<div class="cite"><b>${esc(c.path)}</b><br>“${esc(c.quote)}”</div>`).join("") || `<div class="cite">no citations</div>`;
+    const g = d.diagnostics||{};
+    card.innerHTML = `<div class="q">${esc(question)}</div>
+      <span class="status ${esc(d.status)}">${esc(d.status)}</span>
+      <div class="answer">${esc(d.answer)}</div>
+      <div class="cites">${cites}</div>
+      <div class="diag">confidence ${d.confidence ?? "–"} · ${g.latency_ms} ms · ${g.tokens_in} in / ${g.tokens_out} out · $${(g.estimated_cost_usd||0).toFixed(5)}${(g.notes||[]).length ? " · " + esc(g.notes.join("; ")) : ""}</div>`;
+  }catch(err){
+    card.querySelector(".answer").innerHTML = `<span class="err">Error: ${esc(err.message)}</span>`;
+  }finally{ go.disabled=false; go.textContent="Ask"; }
+}
+</script>
+</body>
+</html>
