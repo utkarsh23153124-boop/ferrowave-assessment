@@ -1,0 +1,389 @@
+{
+  "email": "sam.okafor@northfield.example",
+  "sandbox": "http://127.0.0.1:8787",
+  "model": "gpt-4o-mini",
+  "started_at": "2026-09-05T13:27:57Z",
+  "ended_at": "2026-09-05T13:28:05Z",
+  "turn_count": 2,
+  "usage": {
+    "model": "gpt-4o-mini",
+    "llm_calls": 1,
+    "tokens_in": 889,
+    "tokens_out": 55,
+    "estimated_cost_usd": 0.000166
+  },
+  "turns": [
+    {
+      "n": 1,
+      "customer": "I want a refund",
+      "agent": "That email is on 2 Ferrowave workspaces: 'Northfield Pilot' (starter plan) and 'Northfield Main' (scale plan). Which one are you asking about?",
+      "policy_result": null,
+      "execution": null,
+      "action": null,
+      "escalated": false,
+      "tool_calls": [
+        {
+          "tool": "GET /health",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "ok": true,
+            "sandbox_now": "2026-08-29T09:00:00Z",
+            "version": "FerrowaveSandbox/1.3",
+            "chaos_armed": {}
+          },
+          "ms": 9,
+          "at": "2026-09-05T13:27:57Z"
+        },
+        {
+          "tool": "GET /customers",
+          "args": {
+            "email": "sam.okafor@northfield.example"
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 2,
+            "ids": [
+              "cust_0003",
+              "cust_0004"
+            ],
+            "next_cursor": null
+          },
+          "ms": 219,
+          "at": "2026-09-05T13:28:03Z"
+        },
+        {
+          "tool": "GET /customers/cust_0003/subscription",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "id": "sub_0003",
+            "customer_id": "cust_0003",
+            "plan": "starter",
+            "billing_cycle": "monthly",
+            "status": "active",
+            "started_at": "2026-08-22T09:00:00Z",
+            "current_period_start": "2026-08-22T09:00:00Z",
+            "current_period_end": "2026-09-22T09:00:00Z",
+            "price_minor": 2900,
+            "currency": "USD",
+            "seats_included": 3,
+            "seats_used": 2,
+            "extra_seats": 0,
+            "addons": []
+          },
+          "ms": 170,
+          "at": "2026-09-05T13:28:03Z"
+        },
+        {
+          "tool": "GET /customers/cust_0004/subscription",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "id": "sub_0004",
+            "customer_id": "cust_0004",
+            "plan": "scale",
+            "billing_cycle": "annual",
+            "status": "active",
+            "started_at": "2026-08-25T09:00:00Z",
+            "current_period_start": "2026-08-25T09:00:00Z",
+            "current_period_end": "2027-08-25T09:00:00Z",
+            "price_minor": 299000,
+            "currency": "USD",
+            "seats_included": 25,
+            "seats_used": 14,
+            "extra_seats": 0,
+            "addons": []
+          },
+          "ms": 180,
+          "at": "2026-09-05T13:28:03Z"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "customer": "the Pilot one",
+      "agent": "I asked a colleague to review this and they have not approved it, so nothing has been charged or changed. They will follow up with you.",
+      "policy_result": {
+        "allowed": true,
+        "max_amount_minor": 2900,
+        "code": "monthly_new_within_window",
+        "explanation": "This first monthly charge was issued 7 day(s) ago, inside the 14-day window, so a full refund is available.",
+        "cites": [
+          "Refund Policy 1.1"
+        ],
+        "needs_human_evidence": false,
+        "invoice_id": "inv_1004",
+        "currency": "USD",
+        "amount_minor": 2900,
+        "amount_display": "$29.00",
+        "approved": false
+      },
+      "execution": null,
+      "action": {
+        "kind": "refund",
+        "invoice_id": "inv_1004",
+        "plan": "starter",
+        "billing_cycle": "monthly",
+        "seat_reversal_claimed": false
+      },
+      "escalated": false,
+      "tool_calls": [
+        {
+          "tool": "disambiguate",
+          "args": {
+            "reply": "the Pilot one"
+          },
+          "result": "selected cust_0003 (Northfield Pilot)",
+          "at": "2026-09-05T13:28:03Z"
+        },
+        {
+          "tool": "GET /customers/cust_0003/subscription",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "id": "sub_0003",
+            "customer_id": "cust_0003",
+            "plan": "starter",
+            "billing_cycle": "monthly",
+            "status": "active",
+            "started_at": "2026-08-22T09:00:00Z",
+            "current_period_start": "2026-08-22T09:00:00Z",
+            "current_period_end": "2026-09-22T09:00:00Z",
+            "price_minor": 2900,
+            "currency": "USD",
+            "seats_included": 3,
+            "seats_used": 2,
+            "extra_seats": 0,
+            "addons": []
+          },
+          "ms": 264,
+          "at": "2026-09-05T13:28:04Z"
+        },
+        {
+          "tool": "GET /customers/cust_0003/invoices",
+          "args": {
+            "limit": 10
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 1,
+            "ids": [
+              "inv_1004"
+            ],
+            "next_cursor": null
+          },
+          "ms": 169,
+          "at": "2026-09-05T13:28:04Z"
+        },
+        {
+          "tool": "policy.evaluate_refund",
+          "args": {
+            "invoice_id": "inv_1004",
+            "plan": "starter",
+            "cycle": "monthly"
+          },
+          "result": {
+            "allowed": true,
+            "code": "monthly_new_within_window"
+          },
+          "at": "2026-09-05T13:28:05Z"
+        },
+        {
+          "tool": "human_approval",
+          "args": {
+            "kind": "refund",
+            "customer": "Sam Okafor",
+            "workspace": "Northfield Pilot",
+            "policy_code": "monthly_new_within_window",
+            "explanation": "This first monthly charge was issued 7 day(s) ago, inside the 14-day window, so a full refund is available.",
+            "needs_human_evidence": false,
+            "invoice_id": "inv_1004",
+            "amount": "$29.00",
+            "amount_minor": 2900
+          },
+          "result": "refused",
+          "at": "2026-09-05T13:28:05Z"
+        }
+      ]
+    }
+  ],
+  "all_tool_calls": [
+    {
+      "tool": "GET /health",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "ok": true,
+        "sandbox_now": "2026-08-29T09:00:00Z",
+        "version": "FerrowaveSandbox/1.3",
+        "chaos_armed": {}
+      },
+      "ms": 9,
+      "at": "2026-09-05T13:27:57Z"
+    },
+    {
+      "tool": "GET /customers",
+      "args": {
+        "email": "sam.okafor@northfield.example"
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 2,
+        "ids": [
+          "cust_0003",
+          "cust_0004"
+        ],
+        "next_cursor": null
+      },
+      "ms": 219,
+      "at": "2026-09-05T13:28:03Z"
+    },
+    {
+      "tool": "GET /customers/cust_0003/subscription",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "id": "sub_0003",
+        "customer_id": "cust_0003",
+        "plan": "starter",
+        "billing_cycle": "monthly",
+        "status": "active",
+        "started_at": "2026-08-22T09:00:00Z",
+        "current_period_start": "2026-08-22T09:00:00Z",
+        "current_period_end": "2026-09-22T09:00:00Z",
+        "price_minor": 2900,
+        "currency": "USD",
+        "seats_included": 3,
+        "seats_used": 2,
+        "extra_seats": 0,
+        "addons": []
+      },
+      "ms": 170,
+      "at": "2026-09-05T13:28:03Z"
+    },
+    {
+      "tool": "GET /customers/cust_0004/subscription",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "id": "sub_0004",
+        "customer_id": "cust_0004",
+        "plan": "scale",
+        "billing_cycle": "annual",
+        "status": "active",
+        "started_at": "2026-08-25T09:00:00Z",
+        "current_period_start": "2026-08-25T09:00:00Z",
+        "current_period_end": "2027-08-25T09:00:00Z",
+        "price_minor": 299000,
+        "currency": "USD",
+        "seats_included": 25,
+        "seats_used": 14,
+        "extra_seats": 0,
+        "addons": []
+      },
+      "ms": 180,
+      "at": "2026-09-05T13:28:03Z"
+    },
+    {
+      "tool": "disambiguate",
+      "args": {
+        "reply": "the Pilot one"
+      },
+      "result": "selected cust_0003 (Northfield Pilot)",
+      "at": "2026-09-05T13:28:03Z"
+    },
+    {
+      "tool": "GET /customers/cust_0003/subscription",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "id": "sub_0003",
+        "customer_id": "cust_0003",
+        "plan": "starter",
+        "billing_cycle": "monthly",
+        "status": "active",
+        "started_at": "2026-08-22T09:00:00Z",
+        "current_period_start": "2026-08-22T09:00:00Z",
+        "current_period_end": "2026-09-22T09:00:00Z",
+        "price_minor": 2900,
+        "currency": "USD",
+        "seats_included": 3,
+        "seats_used": 2,
+        "extra_seats": 0,
+        "addons": []
+      },
+      "ms": 264,
+      "at": "2026-09-05T13:28:04Z"
+    },
+    {
+      "tool": "GET /customers/cust_0003/invoices",
+      "args": {
+        "limit": 10
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 1,
+        "ids": [
+          "inv_1004"
+        ],
+        "next_cursor": null
+      },
+      "ms": 169,
+      "at": "2026-09-05T13:28:04Z"
+    },
+    {
+      "tool": "policy.evaluate_refund",
+      "args": {
+        "invoice_id": "inv_1004",
+        "plan": "starter",
+        "cycle": "monthly"
+      },
+      "result": {
+        "allowed": true,
+        "code": "monthly_new_within_window"
+      },
+      "at": "2026-09-05T13:28:05Z"
+    },
+    {
+      "tool": "human_approval",
+      "args": {
+        "kind": "refund",
+        "customer": "Sam Okafor",
+        "workspace": "Northfield Pilot",
+        "policy_code": "monthly_new_within_window",
+        "explanation": "This first monthly charge was issued 7 day(s) ago, inside the 14-day window, so a full refund is available.",
+        "needs_human_evidence": false,
+        "invoice_id": "inv_1004",
+        "amount": "$29.00",
+        "amount_minor": 2900
+      },
+      "result": "refused",
+      "at": "2026-09-05T13:28:05Z"
+    }
+  ]
+}

@@ -1,0 +1,370 @@
+{
+  "email": "maya.chen@lumenbooks.example",
+  "sandbox": "http://127.0.0.1:8787",
+  "model": "gpt-4o-mini",
+  "started_at": "2026-09-05T13:28:24Z",
+  "ended_at": "2026-09-05T13:28:35Z",
+  "turn_count": 1,
+  "usage": {
+    "model": "gpt-4o-mini",
+    "llm_calls": 2,
+    "tokens_in": 2017,
+    "tokens_out": 118,
+    "estimated_cost_usd": 0.000373
+  },
+  "turns": [
+    {
+      "n": 1,
+      "customer": "Refund my first month please",
+      "agent": "Your request for a refund for the first month has been processed. You will receive a refund of $99.00. Confirmed: $99.00 has been refunded to your original payment method (reference re_3a1ae0ad11). It usually takes 5 to 10 business days to appear.",
+      "policy_result": {
+        "allowed": true,
+        "max_amount_minor": 9900,
+        "code": "monthly_new_within_window",
+        "explanation": "This first monthly charge was issued 9 day(s) ago, inside the 14-day window, so a full refund is available.",
+        "cites": [
+          "Refund Policy 1.1"
+        ],
+        "needs_human_evidence": false,
+        "invoice_id": "inv_1001",
+        "currency": "USD",
+        "amount_minor": 9900,
+        "amount_display": "$99.00"
+      },
+      "execution": {
+        "ok": true,
+        "kind": "refund",
+        "id": "re_3a1ae0ad11",
+        "amount_minor": 9900,
+        "amount_display": "$99.00",
+        "replayed": true
+      },
+      "action": {
+        "kind": "refund",
+        "invoice_id": "inv_1001",
+        "plan": "growth",
+        "billing_cycle": "monthly",
+        "seat_reversal_claimed": false
+      },
+      "escalated": false,
+      "tool_calls": [
+        {
+          "tool": "GET /health",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "ok": true,
+            "sandbox_now": "2026-08-29T09:00:00Z",
+            "version": "FerrowaveSandbox/1.3",
+            "chaos_armed": {
+              "refund_commit_then_503": 1
+            }
+          },
+          "ms": 10,
+          "at": "2026-09-05T13:28:24Z"
+        },
+        {
+          "tool": "GET /customers",
+          "args": {
+            "email": "maya.chen@lumenbooks.example"
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 1,
+            "ids": [
+              "cust_0001"
+            ],
+            "next_cursor": null
+          },
+          "ms": 174,
+          "at": "2026-09-05T13:28:31Z"
+        },
+        {
+          "tool": "GET /customers/cust_0001/subscription",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "id": "sub_0001",
+            "customer_id": "cust_0001",
+            "plan": "growth",
+            "billing_cycle": "monthly",
+            "status": "active",
+            "started_at": "2026-08-20T09:00:00Z",
+            "current_period_start": "2026-08-20T09:00:00Z",
+            "current_period_end": "2026-09-20T09:00:00Z",
+            "price_minor": 9900,
+            "currency": "USD",
+            "seats_included": 10,
+            "seats_used": 4,
+            "extra_seats": 0,
+            "addons": []
+          },
+          "ms": 352,
+          "at": "2026-09-05T13:28:31Z"
+        },
+        {
+          "tool": "GET /customers/cust_0001/invoices",
+          "args": {
+            "limit": 10
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 1,
+            "ids": [
+              "inv_1001"
+            ],
+            "next_cursor": null
+          },
+          "ms": 248,
+          "at": "2026-09-05T13:28:31Z"
+        },
+        {
+          "tool": "policy.evaluate_refund",
+          "args": {
+            "invoice_id": "inv_1001",
+            "plan": "growth",
+            "cycle": "monthly"
+          },
+          "result": {
+            "allowed": true,
+            "code": "monthly_new_within_window"
+          },
+          "at": "2026-09-05T13:28:32Z"
+        },
+        {
+          "tool": "human_approval",
+          "args": {
+            "kind": "refund",
+            "customer": "Maya Chen",
+            "workspace": "Maya Chen workspace",
+            "policy_code": "monthly_new_within_window",
+            "explanation": "This first monthly charge was issued 9 day(s) ago, inside the 14-day window, so a full refund is available.",
+            "needs_human_evidence": false,
+            "invoice_id": "inv_1001",
+            "amount": "$99.00",
+            "amount_minor": 9900
+          },
+          "result": "granted",
+          "at": "2026-09-05T13:28:32Z"
+        },
+        {
+          "tool": "POST /refunds",
+          "args": {
+            "invoice_id": "inv_1001",
+            "amount_minor": 9900,
+            "reason": "Refund Policy 1.1 (monthly_new_within_window)"
+          },
+          "status": 503,
+          "idempotency_key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e",
+          "replayed": false,
+          "result": {
+            "code": "upstream_timeout",
+            "message": "The payment provider did not respond in time. The request may or may not have been processed."
+          },
+          "ms": 742,
+          "at": "2026-09-05T13:28:33Z"
+        },
+        {
+          "tool": "POST /refunds",
+          "args": {
+            "invoice_id": "inv_1001",
+            "amount_minor": 9900,
+            "reason": "Refund Policy 1.1 (monthly_new_within_window)"
+          },
+          "status": 200,
+          "idempotency_key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e",
+          "replayed": true,
+          "result": {
+            "id": "re_3a1ae0ad11",
+            "invoice_id": "inv_1001",
+            "customer_id": "cust_0001",
+            "amount_minor": 9900,
+            "currency": "USD",
+            "reason": "Refund Policy 1.1 (monthly_new_within_window)",
+            "status": "succeeded",
+            "created_at": "2026-08-29T09:00:00Z",
+            "idempotency_key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e"
+          },
+          "ms": 146,
+          "at": "2026-09-05T13:28:34Z"
+        },
+        {
+          "tool": "reconcile /refunds",
+          "args": {
+            "key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e"
+          },
+          "result": "resolved after 503: refund re_3a1ae0ad11 exists",
+          "replayed": true,
+          "at": "2026-09-05T13:28:34Z"
+        }
+      ]
+    }
+  ],
+  "all_tool_calls": [
+    {
+      "tool": "GET /health",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "ok": true,
+        "sandbox_now": "2026-08-29T09:00:00Z",
+        "version": "FerrowaveSandbox/1.3",
+        "chaos_armed": {
+          "refund_commit_then_503": 1
+        }
+      },
+      "ms": 10,
+      "at": "2026-09-05T13:28:24Z"
+    },
+    {
+      "tool": "GET /customers",
+      "args": {
+        "email": "maya.chen@lumenbooks.example"
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 1,
+        "ids": [
+          "cust_0001"
+        ],
+        "next_cursor": null
+      },
+      "ms": 174,
+      "at": "2026-09-05T13:28:31Z"
+    },
+    {
+      "tool": "GET /customers/cust_0001/subscription",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "id": "sub_0001",
+        "customer_id": "cust_0001",
+        "plan": "growth",
+        "billing_cycle": "monthly",
+        "status": "active",
+        "started_at": "2026-08-20T09:00:00Z",
+        "current_period_start": "2026-08-20T09:00:00Z",
+        "current_period_end": "2026-09-20T09:00:00Z",
+        "price_minor": 9900,
+        "currency": "USD",
+        "seats_included": 10,
+        "seats_used": 4,
+        "extra_seats": 0,
+        "addons": []
+      },
+      "ms": 352,
+      "at": "2026-09-05T13:28:31Z"
+    },
+    {
+      "tool": "GET /customers/cust_0001/invoices",
+      "args": {
+        "limit": 10
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 1,
+        "ids": [
+          "inv_1001"
+        ],
+        "next_cursor": null
+      },
+      "ms": 248,
+      "at": "2026-09-05T13:28:31Z"
+    },
+    {
+      "tool": "policy.evaluate_refund",
+      "args": {
+        "invoice_id": "inv_1001",
+        "plan": "growth",
+        "cycle": "monthly"
+      },
+      "result": {
+        "allowed": true,
+        "code": "monthly_new_within_window"
+      },
+      "at": "2026-09-05T13:28:32Z"
+    },
+    {
+      "tool": "human_approval",
+      "args": {
+        "kind": "refund",
+        "customer": "Maya Chen",
+        "workspace": "Maya Chen workspace",
+        "policy_code": "monthly_new_within_window",
+        "explanation": "This first monthly charge was issued 9 day(s) ago, inside the 14-day window, so a full refund is available.",
+        "needs_human_evidence": false,
+        "invoice_id": "inv_1001",
+        "amount": "$99.00",
+        "amount_minor": 9900
+      },
+      "result": "granted",
+      "at": "2026-09-05T13:28:32Z"
+    },
+    {
+      "tool": "POST /refunds",
+      "args": {
+        "invoice_id": "inv_1001",
+        "amount_minor": 9900,
+        "reason": "Refund Policy 1.1 (monthly_new_within_window)"
+      },
+      "status": 503,
+      "idempotency_key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e",
+      "replayed": false,
+      "result": {
+        "code": "upstream_timeout",
+        "message": "The payment provider did not respond in time. The request may or may not have been processed."
+      },
+      "ms": 742,
+      "at": "2026-09-05T13:28:33Z"
+    },
+    {
+      "tool": "POST /refunds",
+      "args": {
+        "invoice_id": "inv_1001",
+        "amount_minor": 9900,
+        "reason": "Refund Policy 1.1 (monthly_new_within_window)"
+      },
+      "status": 200,
+      "idempotency_key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e",
+      "replayed": true,
+      "result": {
+        "id": "re_3a1ae0ad11",
+        "invoice_id": "inv_1001",
+        "customer_id": "cust_0001",
+        "amount_minor": 9900,
+        "currency": "USD",
+        "reason": "Refund Policy 1.1 (monthly_new_within_window)",
+        "status": "succeeded",
+        "created_at": "2026-08-29T09:00:00Z",
+        "idempotency_key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e"
+      },
+      "ms": 146,
+      "at": "2026-09-05T13:28:34Z"
+    },
+    {
+      "tool": "reconcile /refunds",
+      "args": {
+        "key": "refund-3cd8743aa7e84e1bb4cc76b77cc6451e"
+      },
+      "result": "resolved after 503: refund re_3a1ae0ad11 exists",
+      "replayed": true,
+      "at": "2026-09-05T13:28:34Z"
+    }
+  ]
+}

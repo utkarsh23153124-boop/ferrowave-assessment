@@ -1,0 +1,221 @@
+{
+  "email": "ahmed@meridian-systems.example",
+  "sandbox": "http://127.0.0.1:8787",
+  "model": "gpt-4o-mini",
+  "started_at": "2026-09-05T13:28:10Z",
+  "ended_at": "2026-09-05T13:28:19Z",
+  "turn_count": 1,
+  "usage": {
+    "model": "gpt-4o-mini",
+    "llm_calls": 2,
+    "tokens_in": 1915,
+    "tokens_out": 125,
+    "estimated_cost_usd": 0.000362
+  },
+  "turns": [
+    {
+      "n": 1,
+      "customer": "Please move us down to the Scale plan",
+      "agent": "I see you're asking to move down to the Scale plan. However, changes to enterprise subscriptions must be handled by your account manager, not through self-serve billing.",
+      "policy_result": {
+        "allowed": false,
+        "direction": "none",
+        "effective": "none",
+        "code": "enterprise_plan_restriction",
+        "explanation": "Enterprise subscriptions are changed by your account manager, not through self-serve billing.",
+        "cites": [
+          "API_REFERENCE plan_restriction"
+        ]
+      },
+      "execution": null,
+      "action": {
+        "kind": "plan_change",
+        "invoice_id": null,
+        "plan": "scale",
+        "billing_cycle": "annual",
+        "seat_reversal_claimed": false
+      },
+      "escalated": false,
+      "tool_calls": [
+        {
+          "tool": "GET /health",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "ok": true,
+            "sandbox_now": "2026-08-29T09:00:00Z",
+            "version": "FerrowaveSandbox/1.3",
+            "chaos_armed": {}
+          },
+          "ms": 13,
+          "at": "2026-09-05T13:28:10Z"
+        },
+        {
+          "tool": "GET /customers",
+          "args": {
+            "email": "ahmed@meridian-systems.example"
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 1,
+            "ids": [
+              "cust_0009"
+            ],
+            "next_cursor": null
+          },
+          "ms": 256,
+          "at": "2026-09-05T13:28:16Z"
+        },
+        {
+          "tool": "GET /customers/cust_0009/subscription",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "id": "sub_0009",
+            "customer_id": "cust_0009",
+            "plan": "enterprise",
+            "billing_cycle": "annual",
+            "status": "active",
+            "started_at": "2025-10-01T09:00:00Z",
+            "current_period_start": "2025-10-01T09:00:00Z",
+            "current_period_end": "2026-10-01T09:00:00Z",
+            "price_minor": null,
+            "currency": "USD",
+            "seats_included": 100,
+            "seats_used": 64,
+            "extra_seats": 0,
+            "addons": []
+          },
+          "ms": 342,
+          "at": "2026-09-05T13:28:16Z"
+        },
+        {
+          "tool": "GET /customers/cust_0009/invoices",
+          "args": {
+            "limit": 10
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 1,
+            "ids": [
+              "inv_1040"
+            ],
+            "next_cursor": null
+          },
+          "ms": 205,
+          "at": "2026-09-05T13:28:17Z"
+        },
+        {
+          "tool": "policy.evaluate_plan_change",
+          "args": {
+            "target": "scale",
+            "cycle": "annual"
+          },
+          "result": {
+            "allowed": false,
+            "code": "enterprise_plan_restriction"
+          },
+          "at": "2026-09-05T13:28:18Z"
+        }
+      ]
+    }
+  ],
+  "all_tool_calls": [
+    {
+      "tool": "GET /health",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "ok": true,
+        "sandbox_now": "2026-08-29T09:00:00Z",
+        "version": "FerrowaveSandbox/1.3",
+        "chaos_armed": {}
+      },
+      "ms": 13,
+      "at": "2026-09-05T13:28:10Z"
+    },
+    {
+      "tool": "GET /customers",
+      "args": {
+        "email": "ahmed@meridian-systems.example"
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 1,
+        "ids": [
+          "cust_0009"
+        ],
+        "next_cursor": null
+      },
+      "ms": 256,
+      "at": "2026-09-05T13:28:16Z"
+    },
+    {
+      "tool": "GET /customers/cust_0009/subscription",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "id": "sub_0009",
+        "customer_id": "cust_0009",
+        "plan": "enterprise",
+        "billing_cycle": "annual",
+        "status": "active",
+        "started_at": "2025-10-01T09:00:00Z",
+        "current_period_start": "2025-10-01T09:00:00Z",
+        "current_period_end": "2026-10-01T09:00:00Z",
+        "price_minor": null,
+        "currency": "USD",
+        "seats_included": 100,
+        "seats_used": 64,
+        "extra_seats": 0,
+        "addons": []
+      },
+      "ms": 342,
+      "at": "2026-09-05T13:28:16Z"
+    },
+    {
+      "tool": "GET /customers/cust_0009/invoices",
+      "args": {
+        "limit": 10
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 1,
+        "ids": [
+          "inv_1040"
+        ],
+        "next_cursor": null
+      },
+      "ms": 205,
+      "at": "2026-09-05T13:28:17Z"
+    },
+    {
+      "tool": "policy.evaluate_plan_change",
+      "args": {
+        "target": "scale",
+        "cycle": "annual"
+      },
+      "result": {
+        "allowed": false,
+        "code": "enterprise_plan_restriction"
+      },
+      "at": "2026-09-05T13:28:18Z"
+    }
+  ]
+}

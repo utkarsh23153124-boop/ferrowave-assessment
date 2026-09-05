@@ -1,0 +1,227 @@
+{
+  "email": "tomas.rivera@casaverde.example",
+  "sandbox": "http://127.0.0.1:8787",
+  "model": "gpt-4o-mini",
+  "started_at": "2026-09-05T13:28:40Z",
+  "ended_at": "2026-09-05T13:28:51Z",
+  "turn_count": 1,
+  "usage": {
+    "model": "gpt-4o-mini",
+    "llm_calls": 2,
+    "tokens_in": 2193,
+    "tokens_out": 144,
+    "estimated_cost_usd": 0.000415
+  },
+  "turns": [
+    {
+      "n": 1,
+      "customer": "Quiero cambiar al plan Starter, es demasiado caro",
+      "agent": "No puedo procesar el cambio al plan Starter porque excede el límite de asientos. El plan Starter incluye solo 3 asientos, pero tu espacio de trabajo tiene 12 miembros. Debes eliminar miembros antes de programar el cambio.",
+      "policy_result": {
+        "allowed": false,
+        "direction": "downgrade",
+        "effective": "next_cycle",
+        "code": "seat_limit_exceeded",
+        "explanation": "Starter includes 3 seats but this workspace has 12 members. Remove members before scheduling the downgrade.",
+        "cites": [
+          "API_REFERENCE seat_limit_exceeded"
+        ]
+      },
+      "execution": null,
+      "action": {
+        "kind": "plan_change",
+        "invoice_id": null,
+        "plan": "starter",
+        "billing_cycle": "monthly",
+        "seat_reversal_claimed": false
+      },
+      "escalated": false,
+      "tool_calls": [
+        {
+          "tool": "GET /health",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "ok": true,
+            "sandbox_now": "2026-08-29T09:00:00Z",
+            "version": "FerrowaveSandbox/1.3",
+            "chaos_armed": {}
+          },
+          "ms": 11,
+          "at": "2026-09-05T13:28:40Z"
+        },
+        {
+          "tool": "GET /customers",
+          "args": {
+            "email": "tomas.rivera@casaverde.example"
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 1,
+            "ids": [
+              "cust_0006"
+            ],
+            "next_cursor": null
+          },
+          "ms": 264,
+          "at": "2026-09-05T13:28:46Z"
+        },
+        {
+          "tool": "GET /customers/cust_0006/subscription",
+          "args": null,
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "id": "sub_0006",
+            "customer_id": "cust_0006",
+            "plan": "growth",
+            "billing_cycle": "monthly",
+            "status": "active",
+            "started_at": "2026-05-14T09:00:00Z",
+            "current_period_start": "2026-08-14T09:00:00Z",
+            "current_period_end": "2026-09-14T09:00:00Z",
+            "price_minor": 9900,
+            "currency": "USD",
+            "seats_included": 10,
+            "seats_used": 12,
+            "extra_seats": 2,
+            "addons": []
+          },
+          "ms": 310,
+          "at": "2026-09-05T13:28:47Z"
+        },
+        {
+          "tool": "GET /customers/cust_0006/invoices",
+          "args": {
+            "limit": 10
+          },
+          "status": 200,
+          "idempotency_key": null,
+          "replayed": false,
+          "result": {
+            "count": 4,
+            "ids": [
+              "inv_1010",
+              "inv_1009",
+              "inv_1008",
+              "inv_1007"
+            ],
+            "next_cursor": null
+          },
+          "ms": 216,
+          "at": "2026-09-05T13:28:47Z"
+        },
+        {
+          "tool": "policy.evaluate_plan_change",
+          "args": {
+            "target": "starter",
+            "cycle": "monthly"
+          },
+          "result": {
+            "allowed": false,
+            "code": "seat_limit_exceeded"
+          },
+          "at": "2026-09-05T13:28:48Z"
+        }
+      ]
+    }
+  ],
+  "all_tool_calls": [
+    {
+      "tool": "GET /health",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "ok": true,
+        "sandbox_now": "2026-08-29T09:00:00Z",
+        "version": "FerrowaveSandbox/1.3",
+        "chaos_armed": {}
+      },
+      "ms": 11,
+      "at": "2026-09-05T13:28:40Z"
+    },
+    {
+      "tool": "GET /customers",
+      "args": {
+        "email": "tomas.rivera@casaverde.example"
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 1,
+        "ids": [
+          "cust_0006"
+        ],
+        "next_cursor": null
+      },
+      "ms": 264,
+      "at": "2026-09-05T13:28:46Z"
+    },
+    {
+      "tool": "GET /customers/cust_0006/subscription",
+      "args": null,
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "id": "sub_0006",
+        "customer_id": "cust_0006",
+        "plan": "growth",
+        "billing_cycle": "monthly",
+        "status": "active",
+        "started_at": "2026-05-14T09:00:00Z",
+        "current_period_start": "2026-08-14T09:00:00Z",
+        "current_period_end": "2026-09-14T09:00:00Z",
+        "price_minor": 9900,
+        "currency": "USD",
+        "seats_included": 10,
+        "seats_used": 12,
+        "extra_seats": 2,
+        "addons": []
+      },
+      "ms": 310,
+      "at": "2026-09-05T13:28:47Z"
+    },
+    {
+      "tool": "GET /customers/cust_0006/invoices",
+      "args": {
+        "limit": 10
+      },
+      "status": 200,
+      "idempotency_key": null,
+      "replayed": false,
+      "result": {
+        "count": 4,
+        "ids": [
+          "inv_1010",
+          "inv_1009",
+          "inv_1008",
+          "inv_1007"
+        ],
+        "next_cursor": null
+      },
+      "ms": 216,
+      "at": "2026-09-05T13:28:47Z"
+    },
+    {
+      "tool": "policy.evaluate_plan_change",
+      "args": {
+        "target": "starter",
+        "cycle": "monthly"
+      },
+      "result": {
+        "allowed": false,
+        "code": "seat_limit_exceeded"
+      },
+      "at": "2026-09-05T13:28:48Z"
+    }
+  ]
+}
